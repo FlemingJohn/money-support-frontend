@@ -11,8 +11,6 @@ import { readSettingsTab } from "@/settings/readSettingsTab";
 import { SettingsTabs } from "@/settings/SettingsTabs";
 import type { SearchParamsProps } from "@/types/SearchParamsProps";
 
-const webhookUrl = `${process.env.BACKEND_URL ?? "http://localhost:4000"}/vapi/webhook`;
-
 export async function SettingsContent({ searchParams }: SearchParamsProps) {
   const tab = readSettingsTab(await searchParams);
 
@@ -25,7 +23,7 @@ export async function SettingsContent({ searchParams }: SearchParamsProps) {
 }
 
 async function renderPanel(tab: ReturnType<typeof readSettingsTab>) {
-  if (tab === "connections") return <ConnectionsPanel health={await getHealthReport()} webhookUrl={webhookUrl} />;
+  if (tab === "connections") return <ConnectionsPanel health={await getHealthReport()} />;
   if (tab === "activity") return <div className="pt-2"><ActivityPanel events={await getActivity()} /></div>;
   const settings = await getSettings();
   if (tab === "handOff") return <HandOffSettingsForm initialValues={settings.handOff} />;

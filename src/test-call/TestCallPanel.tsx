@@ -9,8 +9,8 @@ import { LiveTranscript } from "@/test-call/LiveTranscript";
 import { TestScenarioList } from "@/test-call/TestScenarioList";
 import type { TestCallPanelProps } from "@/types/TestCallPanelProps";
 
-export function TestCallPanel({ setup, agent, faqQuestions }: TestCallPanelProps) {
-  const testCall = useTestCall(setup);
+export function TestCallPanel({ agent, faqQuestions }: TestCallPanelProps) {
+  const testCall = useTestCall();
 
   return (
     <div className="flex flex-1 flex-wrap items-stretch gap-4">

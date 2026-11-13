@@ -1,4 +1,4 @@
-type ErrorDetail = { message?: unknown; errorMsg?: unknown; error?: ErrorDetail | string } | string | null | undefined;
+type ErrorDetail = { message?: unknown; error?: ErrorDetail | string } | string | null | undefined;
 
 export function readCallErrorMessage(error: unknown): string {
   const message = findMessage(error as ErrorDetail, 0);
@@ -8,7 +8,7 @@ export function readCallErrorMessage(error: unknown): string {
 function findMessage(detail: ErrorDetail, depth: number): string {
   if (!detail || depth > 3) return "";
   if (typeof detail === "string") return detail;
-  const ownMessage = toText(detail.message) || toText(detail.errorMsg);
+  const ownMessage = toText(detail.message);
   return ownMessage || findMessage(detail.error, depth + 1);
 }
 

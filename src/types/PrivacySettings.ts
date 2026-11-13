@@ -4,7 +4,6 @@ export interface PrivacySettings {
   maskEmailAddresses: boolean;
   maskNames: boolean;
   keepNumbersForCallbacks: boolean;
-  deleteVapiCopy: boolean;
   startInPrivacyMode: boolean;
   transcriptRetentionDays: 7 | 30 | 90;
 }

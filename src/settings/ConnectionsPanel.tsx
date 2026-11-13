@@ -1,14 +1,14 @@
 import { FieldRow } from "@/components/FieldRow";
 import type { ConnectionsPanelProps } from "@/types/ConnectionsPanelProps";
 
-const serviceNames: Record<string, string> = { database: "Database", ai: "Agent builder and redaction (ai/)", callbacks: "Call backs (Twilio)" };
+const serviceNames: Record<string, string> = { database: "Database", ai: "Agent builder and redaction (ai/)", voice: "Voice calls (LiveKit)", callbacks: "Call backs (Twilio)" };
 const stateLooks = {
   up: { label: "Up", colors: "bg-success-wash text-success-ink" },
   down: { label: "Down", colors: "bg-handoff-wash text-handoff-ink" },
   notConfigured: { label: "Not set up", colors: "bg-sand text-ink-muted" },
 };
 
-export function ConnectionsPanel({ health, webhookUrl }: ConnectionsPanelProps) {
+export function ConnectionsPanel({ health }: ConnectionsPanelProps) {
   return (
     <div className="flex flex-col">
       {health.services.map((service) => {
@@ -19,9 +19,6 @@ export function ConnectionsPanel({ health, webhookUrl }: ConnectionsPanelProps) 
           </FieldRow>
         );
       })}
-      <FieldRow label="Vapi webhook" detail="Vapi sends call events here. The secret and API keys stay on the server.">
-        <code className="max-w-full truncate rounded-control bg-surface px-3 py-2 font-mono text-[13px]">{webhookUrl}</code>
-      </FieldRow>
     </div>
   );
 }

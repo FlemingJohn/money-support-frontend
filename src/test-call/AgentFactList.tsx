@@ -3,7 +3,7 @@ import type { AgentFactListProps } from "@/types/AgentFactListProps";
 export function AgentFactList({ agent }: AgentFactListProps) {
   const facts = [
     { label: "Assistant", value: agent.assistantName },
-    { label: "Model", value: "gpt-4o on Vapi" },
+    { label: "Model", value: "gpt-4o on LiveKit" },
     { label: "Voice", value: agent.voice },
     { label: "Longest call", value: `${agent.longestCallMinutes} minutes` },
   ];

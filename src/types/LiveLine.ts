@@ -2,6 +2,7 @@ import type { Speaker } from "@/types/Speaker";
 
 export interface LiveLine {
   id: number;
+  segmentId: string;
   speaker: Speaker;
   text: string;
   finalText: string;

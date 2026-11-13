@@ -1,18 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type Vapi from "@vapi-ai/web";
+import { Room } from "livekit-client";
 import { checkMicrophoneAccess } from "@/lib/checkMicrophoneAccess";
+import { getTestCallToken } from "@/lib/getTestCallToken";
 import { readCallErrorMessage } from "@/lib/readCallErrorMessage";
-import { addTranscript } from "@/test-call/addTranscript";
-import { isTranscriptMessage } from "@/test-call/isTranscriptMessage";
+import { addTranscriptSegment } from "@/test-call/addTranscriptSegment";
+import { waitForAgentJoin } from "@/test-call/waitForAgentJoin";
+import { watchTestCallRoom } from "@/test-call/watchTestCallRoom";
 import type { LiveLine } from "@/types/LiveLine";
 import type { TestCall } from "@/types/TestCall";
-import type { TestCallSetup } from "@/types/TestCallSetup";
 import type { TestCallStatus } from "@/types/TestCallStatus";
 
-export function useTestCall(setup: TestCallSetup): TestCall {
-  const vapiRef = useRef<Vapi | null>(null);
+const agentJoinTimeoutMilliseconds = 20_000;
+const agentMissingMessage = "The voice agent did not join the call. Check the voice worker is running, then try again.";
+
+export function useTestCall(): TestCall {
+  const roomRef = useRef<Room | null>(null);
   const startedAtRef = useRef(0);
   const [status, setStatus] = useState<TestCallStatus>("idle");
   const [lines, setLines] = useState<LiveLine[]>([]);
@@ -27,7 +31,7 @@ export function useTestCall(setup: TestCallSetup): TestCall {
     return () => window.clearInterval(timer);
   }, [status]);
 
-  useEffect(() => () => void vapiRef.current?.stop(), []);
+  useEffect(() => () => void roomRef.current?.disconnect(), []);
 
   async function start() {
     setStatus("connecting");
@@ -37,34 +41,37 @@ export function useTestCall(setup: TestCallSetup): TestCall {
     const microphoneProblem = await checkMicrophoneAccess();
     if (microphoneProblem) return showFailure(microphoneProblem);
     await endPreviousCall();
-    const vapi = await makeVapi();
-    await vapi.start(setup.assistantId).catch(fail);
+    await joinRoom().catch(fail);
   }
 
-  async function makeVapi(): Promise<Vapi> {
-    const { default: VapiClient } = await import("@vapi-ai/web");
-    const vapi = new VapiClient(setup.publicKey);
-    vapi.on("call-start", () => {
-      startedAtRef.current = Date.now();
-      setStatus("live");
+  async function joinRoom() {
+    const testCallToken = await getTestCallToken();
+    const room = makeRoom();
+    await room.connect(testCallToken.serverUrl, testCallToken.token);
+    await room.localParticipant.setMicrophoneEnabled(true);
+    const joinedAt = await waitForAgentJoin(room, agentJoinTimeoutMilliseconds);
+    if (joinedAt === null) return showFailure(agentMissingMessage);
+    startedAtRef.current = joinedAt;
+    setIsMuted(false);
+    setStatus("live");
+  }
+
+  function makeRoom(): Room {
+    const room = new Room();
+    watchTestCallRoom(room, {
+      onEnded: () => setStatus((current) => (current === "failed" ? current : "ended")),
+      onVolume: setVolume,
+      onSegment: (segment) => setLines((current) => addTranscriptSegment(current, segment, (Date.now() - startedAtRef.current) / 1000)),
     });
-    vapi.on("call-end", () => setStatus((current) => (current === "failed" ? current : "ended")));
-    vapi.on("volume-level", setVolume);
-    vapi.on("error", fail);
-    vapi.on("message", (message: unknown) => {
-      if (!isTranscriptMessage(message)) return;
-      const secondsFromStart = (Date.now() - startedAtRef.current) / 1000;
-      setLines((current) => addTranscript(current, message, secondsFromStart));
-    });
-    vapiRef.current = vapi;
-    return vapi;
+    roomRef.current = room;
+    return room;
   }
 
   async function endPreviousCall() {
-    const previous = vapiRef.current;
-    vapiRef.current = null;
+    const previous = roomRef.current;
+    roomRef.current = null;
     previous?.removeAllListeners();
-    await previous?.stop().catch(() => undefined);
+    await previous?.disconnect().catch(() => undefined);
   }
 
   function fail(error: unknown) {
@@ -75,14 +82,15 @@ export function useTestCall(setup: TestCallSetup): TestCall {
   function showFailure(message: string) {
     setStatus("failed");
     setErrorMessage(message);
+    void roomRef.current?.disconnect();
   }
 
-  function toggleMute() {
-    const vapi = vapiRef.current;
-    if (!vapi) return;
-    vapi.setMuted(!vapi.isMuted());
-    setIsMuted(vapi.isMuted());
+  async function toggleMute() {
+    const room = roomRef.current;
+    if (!room) return;
+    await room.localParticipant.setMicrophoneEnabled(isMuted);
+    setIsMuted(!isMuted);
   }
 
-  return { status, lines, isMuted, volume, seconds, errorMessage, start, stop: async () => vapiRef.current?.stop(), toggleMute };
+  return { status, lines, isMuted, volume, seconds, errorMessage, start, stop: async () => roomRef.current?.disconnect(), toggleMute };
 }

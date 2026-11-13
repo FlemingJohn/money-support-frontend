@@ -1,10 +1,10 @@
 const descriptions: Record<string, string> = {
-  "assistant-said-end-call-phrase": "Agent, after the hand-off sentence",
-  "assistant-ended-call": "Agent",
-  "customer-ended-call": "Caller",
-  "assistant-forwarded-call": "Transferred to a person",
-  "silence-timed-out": "Silence",
-  "exceeded-max-duration": "Longest call time reached",
+  callerHungUp: "Caller",
+  agentEndedCall: "Agent",
+  handedOff: "Agent, after handing off",
+  silenceTimeout: "Silence",
+  timeLimit: "Longest call time reached",
+  error: "Error",
 };
 
 export function describeEndedReason(endedReason: string | null): string {
